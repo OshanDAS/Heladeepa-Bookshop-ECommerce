@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, Tab, Box, Typography, Paper, Container, CircularProgress } from "@mui/material";
-import ProfileInformation from "./components/ProfileInformation";
-import PasswordChange from "./components/PasswordChange";
+import ProfileInformation from "./Components/ProfileInformation";
+import PasswordChange from "./Components/PasswordChange";
 
 import axios from "axios";
 
