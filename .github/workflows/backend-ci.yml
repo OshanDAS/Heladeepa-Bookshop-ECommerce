@@ -15,6 +15,32 @@ on:
 jobs:
   build-backend:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: heladeepaBP
+          MYSQL_USER: ci_user
+          MYSQL_PASSWORD: ci_password
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_URL: jdbc:mysql://127.0.0.1:3306/heladeepaBP?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ci_user
+      DB_PASSWORD: ci_password
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME != '' && secrets.CLOUDINARY_CLOUD_NAME || 'ci-placeholder' }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY != '' && secrets.CLOUDINARY_API_KEY || 'ci-placeholder' }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET != '' && secrets.CLOUDINARY_API_SECRET || 'ci-placeholder' }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME != '' && secrets.EMAIL_USERNAME || 'ci@example.com' }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD != '' && secrets.EMAIL_PASSWORD || 'ci-placeholder' }}
+      PAYHERE_MERCHANT_ID: ${{ secrets.PAYHERE_MERCHANT_ID != '' && secrets.PAYHERE_MERCHANT_ID || 'ci-placeholder' }}
+      PAYHERE_MERCHANT_SECRET: ${{ secrets.PAYHERE_MERCHANT_SECRET != '' && secrets.PAYHERE_MERCHANT_SECRET || 'ci-placeholder' }}
     defaults:
       run:
         working-directory: Backend/demo
