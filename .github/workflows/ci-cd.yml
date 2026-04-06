@@ -25,8 +25,12 @@ jobs:
       - name: Build frontend
         run: npm run build
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-      - name: Run Playwright e2e tests
+        run: npx playwright install --with-deps chromium
+      - name: Clean Allure outputs
+        run: npm run clean:allure
+      - name: Run Playwright e2e tests (headless CI)
+        env:
+          CI: true
         run: npm run test:e2e
       - name: Generate Allure report
         if: always()
