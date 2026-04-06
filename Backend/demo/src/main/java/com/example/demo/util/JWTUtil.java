@@ -16,7 +16,7 @@ import java.util.Map;
 
 @Component
 public class JWTUtil {
-    @Value("${JWT_SECRET}")
+    @Value("${jwt.secret}")
     private String SECRET;
 
     @Value("${jwt_access_expiration}")
