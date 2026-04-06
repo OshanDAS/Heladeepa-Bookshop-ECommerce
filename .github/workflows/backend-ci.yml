@@ -34,13 +34,13 @@ jobs:
       DB_URL: jdbc:mysql://127.0.0.1:3306/heladeepaBP?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: ci_user
       DB_PASSWORD: ci_password
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME != '' && secrets.CLOUDINARY_CLOUD_NAME || 'ci-placeholder' }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY != '' && secrets.CLOUDINARY_API_KEY || 'ci-placeholder' }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET != '' && secrets.CLOUDINARY_API_SECRET || 'ci-placeholder' }}
-      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME != '' && secrets.EMAIL_USERNAME || 'ci@example.com' }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD != '' && secrets.EMAIL_PASSWORD || 'ci-placeholder' }}
-      PAYHERE_MERCHANT_ID: ${{ secrets.PAYHERE_MERCHANT_ID != '' && secrets.PAYHERE_MERCHANT_ID || 'ci-placeholder' }}
-      PAYHERE_MERCHANT_SECRET: ${{ secrets.PAYHERE_MERCHANT_SECRET != '' && secrets.PAYHERE_MERCHANT_SECRET || 'ci-placeholder' }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      PAYHERE_MERCHANT_ID: ${{ secrets.PAYHERE_MERCHANT_ID }}
+      PAYHERE_MERCHANT_SECRET: ${{ secrets.PAYHERE_MERCHANT_SECRET }}
     defaults:
       run:
         working-directory: Backend/demo
@@ -58,3 +58,96 @@ jobs:
 
       - name: Build and test backend
         run: mvn -B clean verify
+
+  performance-backend:
+    needs: build-backend
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: heladeepaBP
+          MYSQL_USER: ci_user
+          MYSQL_PASSWORD: ci_password
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_URL: jdbc:mysql://127.0.0.1:3306/heladeepaBP?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ci_user
+      DB_PASSWORD: ci_password
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      PAYHERE_MERCHANT_ID: ${{ secrets.PAYHERE_MERCHANT_ID }}
+      PAYHERE_MERCHANT_SECRET: ${{ secrets.PAYHERE_MERCHANT_SECRET }}
+    defaults:
+      run:
+        working-directory: Backend/demo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Package backend app
+        run: mvn -B -DskipTests package
+
+      - name: Start backend app
+        run: |
+          JAR_FILE=$(ls target/*.jar | grep -v 'original' | head -n 1)
+          echo "Starting ${JAR_FILE}"
+          nohup java -jar "${JAR_FILE}" > app.log 2>&1 &
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..45}; do
+            if curl -fsS "http://127.0.0.1:8080/api/products?page=0&size=1" > /dev/null; then
+              echo "Backend is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start"
+          tail -n 200 app.log || true
+          exit 1
+
+      - name: Download JMeter
+        run: |
+          curl -L -o apache-jmeter-5.6.3.tgz https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+          tar -xzf apache-jmeter-5.6.3.tgz
+
+      - name: Run JMeter performance test
+        run: |
+          ./apache-jmeter-5.6.3/bin/jmeter -n \
+            -t perf/backend-performance.jmx \
+            -l perf/results.jtl \
+            -e -o perf/report
+
+      - name: Stop backend app
+        if: always()
+        run: pkill -f "target/.*\.jar|org.example.demo.DemoApplication" || true
+
+      - name: Upload performance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-performance-report
+          path: |
+            Backend/demo/perf/report
+            Backend/demo/perf/results.jtl
+            Backend/demo/app.log
+          if-no-files-found: warn
