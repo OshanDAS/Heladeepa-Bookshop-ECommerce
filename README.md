@@ -56,6 +56,8 @@ A full-stack e-commerce platform for a bookshop with comprehensive inventory man
 - **State Management**: React Hooks
 - **UI Components**: Framer Motion, Lucide React
 - **File Handling**: React Dropzone, PapaParse
+- **E2E Testing**: Playwright
+- **Test Reporting**: Allure
 
 
 ## 📁 Project Structure
@@ -147,6 +149,80 @@ Heladeepa-Bookshop-ECommerce/
    ```bash
    npm run dev
    ```
+
+## 🧪 Frontend E2E Testing (Playwright + Allure)
+
+Run these commands from the `frontend` directory.
+
+### Main Commands
+
+- Run tests (headless):
+   ```bash
+   npm run test:e2e
+   ```
+
+- Run tests with browser UI (headed):
+   ```bash
+   npm run test:e2e:headed
+   ```
+
+- Clean old Allure outputs before running:
+   ```bash
+   npm run clean:allure
+   ```
+
+- Clean + run tests (recommended):
+   ```bash
+   npm run test:e2e:clean
+   ```
+
+- Clean + run headed tests (recommended when debugging):
+   ```bash
+   npm run test:e2e:headed:clean
+   ```
+
+- Generate Allure report:
+   ```bash
+   npm run allure:generate
+   ```
+
+- Open Allure report:
+   ```bash
+   npx allure open allure-report
+   ```
+
+### Recommended local flow
+
+1. Run tests with clean state:
+    ```bash
+    npm run test:e2e:headed:clean
+    ```
+2. Generate report:
+    ```bash
+    npm run allure:generate
+    ```
+3. Open report:
+    ```bash
+    npx allure open allure-report
+    ```
+
+### Notes
+
+- Screenshots and videos are attached for failed Playwright tests (as configured).
+- Always clean `allure-results` and report folders before a fresh run to avoid mixed old/new results.
+
+## ⚙️ CI/CD Notes
+
+- Frontend workflow:
+   - Runs on push and pull request to `main`.
+   - Executes Playwright in headless mode.
+   - Generates a **single-file** Allure report for artifact-friendly viewing.
+
+- Backend workflow:
+   - Runs on push/pull request to `main` **only when backend-related files change**.
+   - Trigger paths:
+      - `Backend/**`
+      - `.github/workflows/backend-ci.yml`
 
 ## 🔧 Configuration
 
