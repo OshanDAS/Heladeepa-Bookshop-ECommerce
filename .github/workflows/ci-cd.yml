@@ -30,7 +30,9 @@ jobs:
         run: npm run test:e2e
       - name: Generate Allure report
         if: always()
-        run: npm run allure:generate
+        run: |
+          mkdir -p allure-results
+          npm run allure:generate
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
