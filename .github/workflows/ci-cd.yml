@@ -18,11 +18,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Clean npm cache and install
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+      - name: Install dependencies
+        run: npm install
       - name: Build frontend
         run: npm run build
-      - name: Run frontend tests
-        run: npm test || echo "No tests found"
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright e2e tests
+        run: npm run test:e2e
+      - name: Generate Allure report
+        if: always()
+        run: npm run allure:generate
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-playwright-artifacts
+          path: |
+            frontend/allure-results
+            frontend/allure-report
+            frontend/test-results
+          if-no-files-found: warn
